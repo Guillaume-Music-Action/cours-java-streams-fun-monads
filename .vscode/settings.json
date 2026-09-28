@@ -2,5 +2,7 @@
 	"java.import.gradle.java.home": "/usr/lib/jvm/msopenjdk-current",
 	"java.jdt.ls.java.home": "/usr/lib/jvm/msopenjdk-current",
 	"java.import.gradle.wrapper.enabled": true,
-	"java.import.gradle.user.home": "/home/vscode/.gradle"
+	"java.import.gradle.user.home": "/home/vscode/.gradle",
+	"java.import.gradle.annotationProcessing.enabled": true,
+	"java.gradle.buildServer.enabled": "off"
 }
