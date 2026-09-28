@@ -1,0 +1,21 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "java",
+			"name": "Debug: StickTest",
+			"request": "launch",
+			"mainClass": "org.example.StickTest",
+			"projectName": "Kata-Java-Talking-Stick",
+			"preLaunchTask": "Gradle: test"
+		},
+		{
+			"type": "java",
+			"name": "Debug: ModernJupiterTest",
+			"request": "launch",
+			"mainClass": "org.example.ModernJupiterTest",
+			"projectName": "Kata-Java-Talking-Stick",
+			"preLaunchTask": "Gradle: test"
+		}
+	]
+}
