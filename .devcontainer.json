@@ -1,1 +1,14 @@
-{"image":"mcr.microsoft.com/devcontainers/java"}
+{
+	"image": "mcr.microsoft.com/devcontainers/java",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"java.import.gradle.java.home": "/usr/lib/jvm/msopenjdk-current",
+				"java.jdt.ls.java.home": "/usr/lib/jvm/msopenjdk-current"
+			},
+			"extensions": [
+				"vscjava.vscode-java-pack"
+			]
+		}
+	}
+}
