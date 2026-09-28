@@ -1,6 +1,6 @@
 {
 	"image": "mcr.microsoft.com/devcontainers/java",
-	"postCreateCommand": "sudo apt-get update -qq && sudo apt-get install -y openjdk-21-jdk-headless",
+	"postCreateCommand": "sudo apt-get update -qq && sudo apt-get install -y openjdk-21-jdk-headless && rm -rf /home/vscode/.openvscode-server/extensions/redhat.java-1.56.0-* /home/vscode/.openvscode-server/extensions/vscjava.vscode-java-debug-0.58.*",
 	"customizations": {
 		"vscode": {
 			"settings": {
