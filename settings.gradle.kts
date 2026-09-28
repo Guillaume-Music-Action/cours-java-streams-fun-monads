@@ -1,0 +1,1 @@
+rootProject.name = "Kata-Java-Talking-Stick"
