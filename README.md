@@ -1,5 +1,11 @@
 # Kata TDD : Talking Stick (bâton de parole)
 
+[![Java CI with Gradle](https://github.com/IUT-BUT3-2026/kata-talking-stick-java/actions/workflows/gradle.yml/badge.svg)](https://github.com/IUT-BUT3-2026/kata-talking-stick-java/actions/workflows/gradle.yml)
+![Java](https://img.shields.io/badge/Java-25-orange?logo=openjdk&logoColor=white)
+![Gradle](https://img.shields.io/badge/Gradle-Wrapper-02303A?logo=gradle&logoColor=white)
+![TDD](https://img.shields.io/badge/made%20with-TDD-ff69b4)
+![Talking Stick](https://img.shields.io/badge/🥢-who's%20got%20the%20stick%3F-brightgreen)
+
 **Le principe :** seule la personne qui tient le bâton peut parler. Le bâton circule entre des participants, et ceux qui veulent parler peuvent faire la queue.
 
 Chaque étape est un comportement attendu. Les étudiants choisissent librement leur langage, leur modèle et leurs noms.
