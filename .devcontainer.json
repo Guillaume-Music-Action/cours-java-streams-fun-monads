@@ -4,11 +4,12 @@
 		"vscode": {
 			"settings": {
 				"java.import.gradle.java.home": "/usr/lib/jvm/msopenjdk-current",
-				"java.jdt.ls.java.home": "/usr/lib/jvm/msopenjdk-current"
+				"java.jdt.ls.java.home": "/home/vscode/.openvscode-server/extensions/redhat.java-1.35.0-linux-arm64/jre/17.0.12-linux-aarch64"
 			},
 			"extensions": [
 				"vscjava.vscode-java-pack",
-				"redhat.java@1.35.0"
+				"redhat.java@1.35.0",
+				"vscjava.vscode-java-debug@0.55.0"
 			]
 		}
 	}
