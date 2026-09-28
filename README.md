@@ -63,3 +63,19 @@ Chaque étape est un comportement attendu. Les étudiants choisissent librement 
     - Étape 19 : un comportement déjà testé change. Qu'avez-vous fait du test concerné ?
     - Étape 23 : comment avez-vous rendu le temps testable ?
     - En fin de session : comparer les designs des binômes. Qu'est-ce qui les rend si différents à partir des mêmes comportements ?
+
+## Setup DevPod
+
+Ce projet tourne dans DevPod (image `mcr.microsoft.com/devcontainers/java`, extensions Java pinnées pour compatibilité avec le langage server). Avant votre premier `devpod up` sur ce projet, exécutez une fois sur votre machine :
+
+**macOS / Linux :**
+```sh
+./scripts/setup-devpod.sh
+```
+
+**Windows (PowerShell) :**
+```powershell
+.\scripts\setup-devpod.ps1
+```
+
+Ce script configure DevPod pour installer une version récente d'`openvscode-server` (au lieu de sa version par défaut, trop ancienne pour les extensions Java actuelles). C'est un réglage local à votre machine (`~/.devpod/config.yaml` sur macOS/Linux, `%USERPROFILE%\.devpod\config.yaml` sur Windows), pas un réglage du workspace — il doit être relancé une fois par machine, pas par workspace.
