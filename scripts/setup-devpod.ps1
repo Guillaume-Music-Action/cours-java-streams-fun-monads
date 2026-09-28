@@ -18,3 +18,4 @@ if (-not (Get-Command devpod -ErrorAction SilentlyContinue)) {
 devpod ide use openvscode -o "VERSION=$OpenVscodeVersion"
 
 Write-Host "DevPod will now install openvscode-server $OpenVscodeVersion for new/reset workspaces."
+Write-Host "If a workspace is already running, reload it now: Ctrl+P > 'Developer: Reload Window'."

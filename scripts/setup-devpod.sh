@@ -18,3 +18,4 @@ fi
 devpod ide use openvscode -o "VERSION=${OPENVSCODE_VERSION}"
 
 echo "DevPod will now install openvscode-server ${OPENVSCODE_VERSION} for new/reset workspaces."
+echo "If a workspace is already running, reload it now: Ctrl+P (Cmd+P on macOS) > 'Developer: Reload Window'."
