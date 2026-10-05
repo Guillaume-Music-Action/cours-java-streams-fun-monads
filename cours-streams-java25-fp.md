@@ -1,7 +1,7 @@
 # Cours : Streams Java 25 et programmation fonctionnelle
 
 > Plan de cours, sans exemples de code : ceux-ci viendront pendant les séances, en TDD.
-> Fil conducteur : partir de ce que le JDK offre, repérer ses limites, puis montrer où Vavr comble le manque.
+> Fil conducteur : partir de ce que le JDK offre, repérer ses limites, puis montrer comment on peut combler le manque (en codant soi même ou avec des libraires tierces, ou carrément en changeant de langage de programmation).
 
 ---
 
