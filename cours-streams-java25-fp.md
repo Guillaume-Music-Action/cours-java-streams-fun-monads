@@ -81,11 +81,17 @@
 ### Module 11 : Ouverture vers les monades
 - Rappel du motif : un type enveloppe + `map` + `flatMap` (bind) + injection (`of` / `unit`)
 - Les trois lois : identité gauche, identité droite, associativité
+- **Démystifier la formule : « une monade n'est qu'un monoïde dans la catégorie des endofoncteurs »** :
+  - *Endofoncteur* : en Java, c'est simplement un type générique `F<T>` muni d'un `map` qui transforme les valeurs sans sortir du système de types Java (de la catégorie des types Java vers elle-même).
+  - *Monoïde* : c'est la même structure vue au Module 5 (un ensemble, une opération binaire associative et un élément neutre), mais transposée aux types emboîtés plutôt qu'aux valeurs :
+    - L'élément neutre est l'injection : `unit` / `of` (transforme un `T` en `F<T>`).
+    - L'opération associative est l'aplatissement : `flatten` / `join` (transforme un `F<F<T>>` en `F<T>`).
+  - *Mise en pratique TDD* : montrer concrètement que `flatMap(f)` n'est que la composition `map(f)` suivie de `flatten()`, et vérifier par tests de propriété que `flatten` respecte l'associativité et l'élément neutre (`unit`).
 - `Optional`, `Stream`, `CompletableFuture` : monades, quasi-monades ou pas ?
 - Nuances : usage unique et paresse du `Stream`, absence de typeclass en Java
 - Construire un type `Result` / `Either` monadique
 - Pipelines monadiques : chaîner des opérations faillibles sans exceptions
-- Aperçu : `State`, `Reader`, `Writer`, `IO` et ce qu'ils apportent
+- Aperçu : `State`, `Reader`, `Writer`, `IO` et ce qu'ils apportent (voir Annexe)
 
 ### Fil rouge pour la mise en TDD
 - Chaque module se prête à un test de propriété (lois du foncteur, du monoïde, de la monade)
@@ -174,3 +180,36 @@ Proposition de séquencement : **JDK d'abord, Vavr ensuite**, toujours après av
 - Réimplémenter `zip` et `sliding` en gatherers, puis comparer à `zip` et `sliding` de Vavr
 - Mesurer la différence entre modification d'une `List` JDK (copie) et d'une `List` Vavr (partage structurel)
 - Rendre un pipeline avec exceptions vérifiées composable, d'abord avec un wrapper maison, puis avec `Try`
+
+---
+
+## Annexe : Au-delà de Vavr — Monades d'effets (`State`, `Reader`, `Writer`, `IO`)
+
+### 1. Pourquoi Vavr ne les propose pas
+Vavr a été conçue comme une boîte à outils pragmatique pour combler les manques immédiats de Java 8+ (collections persistantes, contrôle d'erreur `Try`/`Either`, tuples, arités fonctionnelles). Elle ne cherche pas à être un framework de programmation purement fonctionnelle complet et omet délibérément les monades de gestion d'état et d'effets secondaires.
+
+### 2. Quelles bibliothèques en Java pour aller plus loin ?
+
+- **Cyclops (`io.github.cyclops-react`)** :
+  - La bibliothèque moderne la plus complète en Java pour les monades d'effets.
+  - Fournit nativement : `Reader<T, R>`, `Writer<W, T>`, `State<S, T>`, `IO<T>` (paresseux et asynchrone), et structures `Free` monad / `Trampoline`.
+  - Modules d'interopérabilité directe avec Vavr, Guava, RxJava et les streams du JDK.
+- **Functional Java (`functionaljava.org`)** :
+  - Historique et mathématiquement très rigoureuse (calquée sur Haskell / Scalaz).
+  - Implémente `State<S, A>`, `Reader<R, A>`, `Writer<W, A>`, `IO<A>` avec gestion de la récursion sur la pile via trampolines.
+  - Syntaxe plus verbeuse due à son antériorité aux lambdas modernes de Java.
+- **Atlassian Fugue (`io.atlassian.fugue`)** :
+  - FP pragmatique orientée `Option`, `Either`, `Pair`, mais n'implémente pas `State` ni `IO`.
+
+### 3. Exercices pédagogiques en TDD (implémentations maison)
+
+Plutôt que d'introduire un framework lourd en fin de cursus, le parti-pris pédagogique est de **coder soi-même `Reader` et `State` en TDD** :
+
+- **`Reader<R, A>`** :
+  - *Principe* : n'est fondamentalement qu'une abstraction autour d'une fonction `Function<R, A>`.
+  - *Intérêt pédagogique* : modéliser une injection de dépendance et un contexte d'exécution pur, sans framework ni conteneur IoC (Spring).
+  - *Opérations à tester* : `ask()`, `unit(A)`, `map(A -> B)`, `flatMap(A -> Reader<R, B>)`, `run(R)`.
+- **`State<S, A>`** :
+  - *Principe* : n'est qu'un wrapper d'une fonction de transition d'état `Function<S, Tuple2<S, A>>`.
+  - *Intérêt pédagogique* : manipuler et propager un état immuable sans variable mutable ni effet de bord partagé.
+  - *Opérations à tester* : `get()`, `set(S)`, `modify(S -> S)`, `map`, `flatMap`, `run(S)`.
