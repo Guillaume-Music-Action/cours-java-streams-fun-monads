@@ -22,7 +22,7 @@ Chaque étape est un comportement attendu. Les étudiants choisissent librement 
 
 6. La personne qui tient le bâton peut le donner à quelqu'un d'autre, qui le tient alors.
 7. Une personne qui ne tient pas le bâton ne peut pas le donner.
-8. Se donner le bâton à soi-même n'a pas de sens. Le comportement exact est à décider en binôme.
+8. Se donner le bâton à soi-même n'a pas de sens.
 9. on ne peut donner le baton que à une personne (à la fois)
 10. on ne peut pas donner le baton à personne ( vide / nobody)
 
