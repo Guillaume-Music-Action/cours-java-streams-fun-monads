@@ -93,7 +93,7 @@
 - Rappel du motif : un type enveloppe + `map` + `flatMap` (bind) + injection (`of` / `unit`)
 - Les trois lois : identité gauche, identité droite, associativité
 - **Démystifier la formule : « une monade n'est qu'un monoïde dans la catégorie des endofoncteurs »** :
-  - *Endofoncteur* : en Java, c'est simplement un type générique `F<T>` muni d'un `map` qui transforme les valeurs sans sortir du système de types Java (de la catégorie des types Java vers elle-même).
+  - *Endofoncteur* : en Java, c'est simplement un type générique `F<T>` muni d'une fonction `map` qui transforme les valeurs sans sortir du système de types Java (de la catégorie des types Java vers elle-même), donc de T vers T ( `T -> T` ).
   - *Monoïde* : c'est la même structure vue au Module 5 (un ensemble, une opération binaire associative et un élément neutre), mais transposée aux types emboîtés plutôt qu'aux valeurs :
     - L'élément neutre est l'injection : `unit` / `of` (transforme un `T` en `F<T>`).
     - L'opération associative est l'aplatissement : `flatten` / `join` (transforme un `F<F<T>>` en `F<T>`).
