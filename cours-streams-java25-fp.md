@@ -72,6 +72,17 @@
 - Combiner plusieurs valeurs contextuelles indépendantes (`Optional`, résultats de validation)
 
 ### Module 10 : Stream et effets
+- **Quand a-t-on affaire à des effets ?**
+  - Dès qu'un calcul fait autre chose que renvoyer une valeur pure dépendant uniquement de ses paramètres d'entrée :
+    - *Effets d'échec / d'absence* : division par zéro, ressource introuvable (`Optional`, `Result`, `Try`, `Either`).
+    - *Effets de bord physiques (I/O)* : écrire en console, interroger une base de données, appeler une API REST, lire l'horloge système (`IO`).
+    - *Effets contextuels / environnement* : accéder à une configuration, une transaction ou un contexte d'authentification sans le passer partout manuellement (`Reader`).
+    - *Effets de journalisation / audit* : accumuler des logs ou des métriques au fil de l'eau sans logger global mutable (`Writer`).
+    - *Effets de transition d'état* : faire évoluer un état (ex. compteur, pseudo-aléatoire, accumulateur complexe) de façon déterministe sans variable mutable (`State`).
+- **Pourquoi a-t-on besoin de les modéliser comme des valeurs ?**
+  - En programmation fonctionnelle, les effets non encapsulés brisent la transparence référentielle, empêchent la composition des pipelines et rendent les tests unitaires fragiles (recours obligé aux mocks).
+  - Encapsuler un effet dans un type permet de raisonner dessus, de tester le comportement à froid sans exécuter l'effet immédiatement, et de composer les flux d'effets avec `flatMap`.
+  - Pour les monades d'effets avancées (`IO`, `Reader`, `Writer`, `State`), se reporter à l'[Annexe : Au-delà de Vavr](#annexe--au-delà-de-vavr--monades-deffets-state-reader-writer-io).
 - Effets de bord : `forEach` et `forEachOrdered`
 - Gestion des erreurs dans un pipeline : exceptions vérifiées, pourquoi elles cassent la composition
 - Représenter l'échec comme une valeur (`Optional`, type `Result` avec sealed types et records)
@@ -157,7 +168,7 @@ Conséquence pédagogique : une bonne partie de Vavr peut être **reconstruite e
 7. J'enchaîne des opérations qui lèvent des exceptions vérifiées ? → **Vavr `Try` / `CheckedFunction`**
 8. Je veux de la lisibilité sur de longues chaînes de `flatMap` ? → **Vavr `For`**
 9. Je veux du pattern matching sur types ? → **Java 25 d'abord** ; Vavr `Match` seulement pour des prédicats arbitraires
-10. J'ai besoin de `State`, `Reader`, `Writer`, `IO` ? → **Ni JDK ni Vavr** : à implémenter ou autre bibliothèque
+10. J'ai besoin de manipuler des effets purs (`State`, `Reader`, `Writer`, `IO`) ? → **Ni JDK ni Vavr** : à implémenter soi-même en TDD ou se tourner vers une bibliothèque spécialisée (voir [Annexe : Au-delà de Vavr](#annexe--au-delà-de-vavr--monades-deffets-state-reader-writer-io))
 
 ### B.6 Intégration dans le déroulé du cours
 
@@ -203,13 +214,21 @@ Vavr a été conçue comme une boîte à outils pragmatique pour combler les man
 
 ### 3. Exercices pédagogiques en TDD (implémentations maison)
 
-Plutôt que d'introduire un framework lourd en fin de cursus, le parti-pris pédagogique est de **coder soi-même `Reader` et `State` en TDD** :
+Plutôt que d'introduire un framework lourd en fin de cursus, le parti-pris pédagogique est de **coder soi-même ces abstractions d'effets en TDD** :
 
-- **`Reader<R, A>`** :
+- **`IO<A>` (Gestion des effets de bord réels : I/O, console, réseau)** :
+  - *Principe* : un `IO<A>` est une **description de calcul** (un plan d'exécution différé) et non son exécution immédiate. En Java, il s'agit fondamentalement d'un wrapper de `Supplier<A>` (ou `Callable<A>`).
+  - *Intérêt pédagogique* : séparer la **définition pure** d'un programme de son **évaluation impure** (« *running at the end of the world* »). Un appel à `IO.println(...)` ou `IO.readFile(...)` ne produit aucun effet tant qu'on n'appelle pas explicitement `.unsafeRun()`.
+  - *Opérations à tester* : `delay(Supplier<A>)` / `unit(A)`, `map(A -> B)`, `flatMap(A -> IO<B>)`, `unsafeRun()`, gestion de la paresse (vérifier qu'aucun effet de bord n'a lieu avant `unsafeRun()`).
+- **`Reader<R, A>` (Effet de lecture d'environnement / contexte)** :
   - *Principe* : n'est fondamentalement qu'une abstraction autour d'une fonction `Function<R, A>`.
   - *Intérêt pédagogique* : modéliser une injection de dépendance et un contexte d'exécution pur, sans framework ni conteneur IoC (Spring).
   - *Opérations à tester* : `ask()`, `unit(A)`, `map(A -> B)`, `flatMap(A -> Reader<R, B>)`, `run(R)`.
-- **`State<S, A>`** :
+- **`Writer<W, A>` (Effet de trace / journalisation pure)** :
+  - *Principe* : associe une valeur produite `A` à un log/contexte accumulé `W` (où `W` forme un monoïde, e.g. `List<String>`). C'est un wrapper de `Tuple2<W, A>`.
+  - *Intérêt pédagogique* : tracer l'exécution d'un calcul sans logger mutable global ni appel I/O immédiat ; les traces se composent algébriquement avec l'opération du monoïde.
+  - *Opérations à tester* : `tell(W)`, `unit(A)`, `map`, `flatMap` (qui concatène les traces de deux calculs successifs).
+- **`State<S, A>` (Effet d'état modifiable pur)** :
   - *Principe* : n'est qu'un wrapper d'une fonction de transition d'état `Function<S, Tuple2<S, A>>`.
   - *Intérêt pédagogique* : manipuler et propager un état immuable sans variable mutable ni effet de bord partagé.
   - *Opérations à tester* : `get()`, `set(S)`, `modify(S -> S)`, `map`, `flatMap`, `run(S)`.
