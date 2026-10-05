@@ -9,9 +9,10 @@
 
 ### Module 0 : Cadrage
 - Pourquoi la programmation fonctionnelle : fonctions pures, immutabilité, composition, absence d'effets de bord
-- Ce que Java offre (lambdas, interfaces fonctionnelles, records, sealed types, pattern matching) et ce qu'il n'offre pas
+- Intégrité référentielle
+- Ce que Java 25 offre (lambdas, interfaces fonctionnelles, records, sealed types, pattern matching) et ce qu'il n'offre pas
 - Le Stream comme pipeline déclaratif : source → opérations intermédiaires → opération terminale
-- Paresse, usage unique, court-circuit
+- Paresse (lazyness), usage unique, court-circuit (short circuit)
 
 ### Module 1 : Fondations
 - Interfaces fonctionnelles : `Function`, `Predicate`, `Supplier`, `Consumer`, `BiFunction`, `UnaryOperator`
