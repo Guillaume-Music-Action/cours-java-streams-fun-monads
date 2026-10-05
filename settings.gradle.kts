@@ -1,1 +1,1 @@
-rootProject.name = "Kata-Java-Talking-Stick"
+rootProject.name = "cours-streams-java25-fp"

@@ -1,73 +1,55 @@
-# Kata TDD : Talking Stick (bâton de parole)
+# Cours : Streams Java 25 et programmation fonctionnelle
 
-[![Java CI with Gradle](https://github.com/IUT-BUT3-2026/kata-talking-stick-java/actions/workflows/gradle.yml/badge.svg)](https://github.com/IUT-BUT3-2026/kata-talking-stick-java/actions/workflows/gradle.yml)
 ![Java](https://img.shields.io/badge/Java-25-orange?logo=openjdk&logoColor=white)
 ![Gradle](https://img.shields.io/badge/Gradle-Wrapper-02303A?logo=gradle&logoColor=white)
-![TDD](https://img.shields.io/badge/made%20with-TDD-ff69b4)
-![Talking Stick](https://img.shields.io/badge/🥢-who's%20got%20the%20stick%3F-brightgreen)
+![TDD](https://img.shields.io/badge/methodology-TDD-ff69b4)
+![Vavr](https://img.shields.io/badge/library-Vavr_0.10.6-blue)
 
-**Le principe :** seule la personne qui tient le bâton peut parler. Le bâton circule entre des participants, et ceux qui veulent parler peuvent faire la queue.
+Ce dépôt héberge les supports pratiques, exercices et implémentations du cours **Streams Java 25 et programmation fonctionnelle**.
 
-Chaque étape est un comportement attendu. Les étudiants choisissent librement leur langage, leur modèle et leurs noms.
+Pour le plan détaillé du cours et l'analyse comparative JDK 25 vs Vavr, consultez [`cours-streams-java25-fp.md`](cours-streams-java25-fp.md).
 
-## Phase 1 : Possession
+---
 
-1. Au départ, personne ne tient le bâton.
-2. La 1ere personne dans la liste peut  prendre le bâton libre, (elle le tient).
-3. La personne qui tient le bâton peut parler. Les autres ne peuvent pas.
-4. Quand personne relache le bâton, il faut que une autre personne le récupère (.
+## Philosophie et pédagogie : 100% TDD
 
+Le cours repose intégralement sur une approche **Test-Driven Development (TDD)** :
+- **Pas de cours magistral abstrait** : les concepts (foncteurs, monoïdes, monades, gatherers, immutabilité persistante) sont explorés et validés par l'écriture de tests.
+- **Outillage pré-configuré** :
+  - **JUnit Jupiter (JUnit 5)** pour orchestrer la suite de tests et structurer les scénarios (`@Nested`, `@DisplayName`, tests paramétrés).
+  - **AssertJ** pour des assertions fluides, lisibles et expressives sur les collections, types optionnels et objets composites.
+  - **Vavr** intégré comme boîte à outils fonctionnelle complémentaire au JDK.
+- **Fil conducteur** :
+  1. Partir de ce que le **JDK 25** propose nativement (`Stream`, `Gatherers` - JEP 485, lambdas, records, sealed interfaces, pattern matching).
+  2. Éprouver et constater les limites du JDK en écrivant des tests ciblés.
+  3. Reconstruire certaines abstractions par nous-mêmes en TDD (lois du foncteur, du monoïde et de la monade, types `Result` / `Either`, gatherers personnalisés).
+  4. Comparer avec les solutions prêtes à l'emploi apportées par **Vavr** (`Try`, `Either`, `Validation`, collections persistantes, tuples, fonctions d'ordre supérieur jusqu'à l'arité 8).
 
-## Phase 2 : Transmission
+---
 
-6. La personne qui tient le bâton peut le donner à quelqu'un d'autre, qui le tient alors.
-7. Une personne qui ne tient pas le bâton ne peut pas le donner.
-8. Se donner le bâton à soi-même n'a pas de sens.
-9. on ne peut donner le baton que à une personne (à la fois)
-10. on ne peut pas donner le baton à personne ( vide / nobody)
+## Stack technique
 
-## Phase 3 : Le cercle
+- **Java 25** (OpenJDK / Temurin toolchain)
+- **Gradle 9** (Kotlin DSL)
+- **JUnit Jupiter** 6.0.0 (via BOM)
+- **AssertJ Core** 3.27.3
+- **Vavr** 0.10.6
 
-11. Le bâton appartient à un cercle de participants défini à l'avance. Une personne hors du cercle ne peut pas le prendre.
-13. La personne qui tient le bâton peut le passer à son voisin, en suivant l'ordre du cercle.
-14. Le dernier du cercle passe le bâton au premier.
-15. Un cercle ne peut pas être vide, et une même personne ne peut pas y figurer deux fois.
+---
 
-## Phase 4 : Demandes de parole
+## Exécuter les tests
 
-16. Un participant peut demander la parole. Sa demande est alors enregistrée.
-17. Demander la parole deux fois ne compte qu'une fois.
-18. La personne qui tient le bâton ne peut pas demander la parole.
-19. Quand le bâton est rendu, il va à la personne qui a demandé la parole en premier.
-20. Quand le bâton est rendu et que personne n'a demandé la parole, plus personne ne le tient.
-21. Un participant peut retirer sa demande de parole.
-22. Tant que des demandes de parole sont en attente, personne ne peut prendre le bâton sans attendre son tour.
+Lancer l'ensemble des tests via le Gradle Wrapper :
+```sh
+./gradlew test
+```
 
-## Phase 5 : Temps de parole
+Lancer un test spécifique :
+```sh
+./gradlew test --tests "org.example.ModernJupiterTest"
+```
 
-23. On peut connaître depuis combien de temps la personne qui tient le bâton parle.
-24. On peut fixer un temps de parole maximum. On sait alors si la personne qui tient le bâton l'a dépassé.
-25. Si le temps est dépassé et que quelqu'un a demandé la parole, le bâton passe automatiquement à cette personne.
-26. Si le temps est dépassé et que personne n'a demandé la parole, la personne qui tient le bâton continue de parler.
-
-## Phase 6 : Historique (bonus)
-
-27. On peut retrouver, dans l'ordre, qui a tenu le bâton.
-28. On peut connaître le temps de parole total de chaque participant.
-29. On peut savoir quel participant a le moins parlé.
-
-## Notes pour l'animation
-
-- **Format :** ping-pong en binôme. A écrit le test, B le fait passer et écrit le suivant. On change de rôle toutes les 5 à 7 minutes.
-- **Durée :** les phases 1 à 3 prennent environ 1h30. Comptez 2 à 3h pour aller jusqu'à la phase 5. La phase 6 est réservée aux binômes rapides.
-- **Règle du jeu :** on ne lit pas les étapes suivantes à l'avance. Le design doit émerger des tests, pas d'une anticipation.
-- **Seule contrainte imposée :** les tests doivent être rapides et déterministes, y compris en phase 5.
-- **Points de débrief :**
-    - Étape 5 : comment chaque binôme a-t-il exprimé un refus ?
-    - Étape 11 : quel impact l'arrivée du cercle a-t-elle eu sur les tests existants ?
-    - Étape 19 : un comportement déjà testé change. Qu'avez-vous fait du test concerné ?
-    - Étape 23 : comment avez-vous rendu le temps testable ?
-    - En fin de session : comparer les designs des binômes. Qu'est-ce qui les rend si différents à partir des mêmes comportements ?
+---
 
 ## Setup DevPod
 

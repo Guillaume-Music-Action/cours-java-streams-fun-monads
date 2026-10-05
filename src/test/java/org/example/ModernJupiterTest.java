@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
+import io.vavr.control.Option;
+import io.vavr.control.Try;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,14 +17,13 @@ class ModernJupiterTest {
     @Test
     @DisplayName("should verify string properties fluently")
     void shouldVerifyStringPropertiesFluently() {
-        var message = "Talking Stick Kata";
+        var message = "Java 25 Streams & Functional Programming";
 
         assertThat(message)
                 .isNotNull()
-                .startsWith("Talking")
-                .contains("Stick")
-                .endsWith("Kata")
-                .hasSize(18);
+                .startsWith("Java 25")
+                .contains("Streams")
+                .endsWith("Programming");
     }
 
     @Test
@@ -45,6 +46,22 @@ class ModernJupiterTest {
         assertThat(currentSpeaker)
                 .isPresent()
                 .hasValue("Alice");
+    }
+
+    @Test
+    @DisplayName("should verify Vavr functional controls fluently")
+    void shouldVerifyVavrFunctionalControlsFluently() {
+        var option = Option.of("Stream");
+        var successfulTry = Try.of(() -> Integer.parseInt("42"));
+        var failedTry = Try.of(() -> Integer.parseInt("abc"));
+
+        assertThat(option.isDefined()).isTrue();
+        assertThat(option.get()).isEqualTo("Stream");
+        assertThat(successfulTry.isSuccess()).isTrue();
+        assertThat(successfulTry.get()).isEqualTo(42);
+        assertThat(failedTry.isFailure()).isTrue();
+        assertThat(failedTry.getCause())
+                .isInstanceOf(NumberFormatException.class);
     }
 
     @Nested

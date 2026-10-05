@@ -6,7 +6,7 @@
 			"name": "Debug: StickTest",
 			"request": "launch",
 			"mainClass": "org.example.StickTest",
-			"projectName": "Kata-Java-Talking-Stick",
+			"projectName": "cours-streams-java25-fp",
 			"preLaunchTask": "Gradle: test"
 		},
 		{
@@ -14,7 +14,7 @@
 			"name": "Debug: ModernJupiterTest",
 			"request": "launch",
 			"mainClass": "org.example.ModernJupiterTest",
-			"projectName": "Kata-Java-Talking-Stick",
+			"projectName": "cours-streams-java25-fp",
 			"preLaunchTask": "Gradle: test"
 		}
 	]
