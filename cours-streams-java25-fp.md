@@ -232,3 +232,70 @@ Plutôt que d'introduire un framework lourd en fin de cursus, le parti-pris péd
   - *Principe* : n'est qu'un wrapper d'une fonction de transition d'état `Function<S, Tuple2<S, A>>`.
   - *Intérêt pédagogique* : manipuler et propager un état immuable sans variable mutable ni effet de bord partagé.
   - *Opérations à tester* : `get()`, `set(S)`, `modify(S -> S)`, `map`, `flatMap`, `run(S)`.
+
+---
+
+## Annexe 2 : Est-ce la faute de la JVM s'il est dur de coder de « vraies » monades en Java ?
+
+La réponse courte est **non, la JVM n'en est pas la cause principale : le coupable premier est le compilateur et le système de types de Java (`javac`)**, même si deux choix d'architecture bas niveau de la JVM compliquent la donne à l'exécution.
+
+La preuve formelle que la JVM n'est pas le facteur limitant : **Scala (Cats, ZIO), Clojure et Kotlin (Arrow) s'exécutent sur la même JVM** et manipulent sans encombre des monades pures, des structures d'effets complètes et des hiérarchies de catégories.
+
+---
+
+### 1. La vraie cause : les limites du système de types du langage Java (`javac`)
+
+#### A. L'absence de *Higher-Kinded Types* (HKT / Types d'ordre supérieur)
+- En Java, on ne peut pas abstraire sur un constructeur de type : un type générique doit être saturé (`T`, `List<T>`).
+- Il est impossible d'exprimer une interface générique `Monad<M>` où `M` est lui-même un conteneur générique `M<_>` :
+  ```java
+  // IMPOSSIBLE en Java :
+  interface Monad<M<_>> {
+      <A> M<A> unit(A value);
+      <A, B> M<B> flatMap(M<A> ma, Function<A, M<B>> f);
+  }
+  ```
+- **Conséquence** : impossibilité d'écrire des algorithmes monadiques polymorphes (ex: `sequence`, `traverse`) valables à la fois pour `Optional`, `List`, `Either` et `IO`. Chaque classe doit réimplémenter ses propres méthodes ad hoc `flatMap` sans ancêtre commun exploitable.
+- *(Note : des bibliothèques comme Cyclops ou Arrow contournent cela par l'astuce de "Lightweight Higher-Kinded Polymorphism" via émulation défensive de types, mais au prix d'une verbosité et de casts intolérables pour du code idiomatique).*
+
+#### B. L'absence de sucre syntaxique (`do-notation` ou `for-comprehension`)
+- En Java, enchaîner plusieurs opérations monadiques interdépendantes conduit inévitablement au *callback hell* de lambdas imbriquées :
+  ```java
+  optA.flatMap(a ->
+      optB.flatMap(b ->
+          optC.map(c -> combine(a, b, c))
+      )
+  );
+  ```
+- Scala dispose du `for`, Haskell du `do`, C# de la `query comprehension` (`from x in ... select ...`). Java n'offre aucun support syntaxique pour aplatir ces liaisons séquentielles.
+
+#### C. L'absence de classes de types (*Typeclasses*)
+- En Haskell ou Scala, une monade n'est pas un contrat imposé par sous-typage (`implements Monad`), mais une **propriété externe** attribuée à un type existant via une typeclass (polymorphisme ad hoc).
+- En Java, l'héritage nominal oblige le type à déclarer la monade dès sa conception, rendant impossible la monadification rétroactive propre de types du JDK sans wrapping permanent.
+
+---
+
+### 2. La responsabilité réelle (mais secondaire) de la JVM
+
+Si la JVM n'empêche pas l'abstraction théorique, ses caractéristiques d'exécution posent deux obstacles matériels :
+
+#### A. Pas d'optimisation de récursion terminale (*Tail Call Optimization* / TCO)
+- **Le problème** : la composition monadique poussée (notamment dans `State`, `IO` ou `Free`) transforme les boucles et les transitions d'état en enchaînements récursifs de `flatMap`.
+- **L'impact JVM** : chaque frame d'appel consomme la pile d'exécution du thread (`StackOverflowError`). La JVM ne garantit pas la réutilisation de la frame de pile sur les appels récursifs terminaux.
+- **La parade** : les bibliothèques FP sur JVM doivent implémenter un trampoline d'évaluation (transformation de la pile d'exécution en structures allouées sur le tas / heap), ce qui génère une surcharge de wrappers d'objets.
+
+#### B. L'effacement de types (*Type Erasure*)
+- Héritée de Java 5 pour maintenir la compatibilité binaire ascendante avec le bytecode Java 1.1, l'information de type générique est effacée à la compilation (`Object`).
+- Cela empêche le runtime d'effectuer des dispatchs spécialisés ou du pattern matching raffiné basé sur les types intérieurs de conteneurs au niveau du bytecode.
+
+---
+
+### 3. Synthèse pour le cours
+
+| Obstacle | Responsable | Rôle exact | Langage JVM recommandé |
+|---|---|---|---|
+| Impossibilité d'écrire `Monad<M<_>>` | **Langage (`javac`)** | Manque de Higher-Kinded Types dans la grammaire de typage | **Scala** (HKT natifs via Cats / ZIO) |
+| Verbosité des `flatMap` imbriqués | **Langage (`javac`)** | Pas de `do-notation` / `for-comprehension` syntaxique | **Scala** (`for`), **Kotlin** (`arrow.core.raise` / continuations) |
+| Impossibilité d'enrichir rétroactivement des types existants | **Langage (`javac`)** | Pas de Typeclasses (uniquement de l'héritage nominal) | **Scala** (`given` / `using` / `extension`), **Kotlin** (fonctions d'extension) |
+| Risque de `StackOverflowError` sur les longs pipelines récursifs | **Machine virtuelle (JVM)** | Absence de TCO native sur le bytecode d'appel | **Scala** (`@tailrec`), **Kotlin** (`tailrec`), **Clojure** (`loop`/`recur`) |
+| Surcoût mémoire des trampolines / wrappers | **Machine virtuelle (JVM)** | Effacement des types et allocation d'objets sur le tas pour simuler la pile | **Scala** (`opaque types`, `AnyVal`), **Kotlin** (`value class`) |
