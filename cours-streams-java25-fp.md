@@ -5,7 +5,7 @@
 
 ---
 
-## Partie A : Plan du cours (JDK 25)
+## Partie A : le langage Java (JDK 25) et la programmation fonctionnelle
 
 ### Module 0 : Cadrage
 - Pourquoi la programmation fonctionnelle : fonctions pures, immutabilité, composition, absence d'effets de bord
@@ -195,7 +195,7 @@ Proposition de séquencement : **JDK d'abord, Vavr ensuite**, toujours après av
 
 ---
 
-## Annexe : Au-delà de Vavr — Monades d'effets (`State`, `Reader`, `Writer`, `IO`)
+## Partie C : Au-delà de Vavr — Monades d'effets (`State`, `Reader`, `Writer`, `IO`)
 
 ### 1. Pourquoi Vavr ne les propose pas
 Vavr a été conçue comme une boîte à outils pragmatique pour combler les manques immédiats de Java 8+ (collections persistantes, contrôle d'erreur `Try`/`Either`, tuples, arités fonctionnelles). Elle ne cherche pas à être un framework de programmation purement fonctionnelle complet et omet délibérément les monades de gestion d'état et d'effets secondaires.
@@ -236,7 +236,9 @@ Plutôt que d'introduire un framework lourd en fin de cursus, le parti-pris péd
 
 ---
 
-## Annexe 2 : Est-ce la faute de la JVM s'il est dur de coder de « vraies » monades en Java ?
+## Annexe  : Est-ce la faute de la JVM s'il est dur de coder de « vraies » monades en Java ?
+
+Oui et non !
 
 La réponse courte est **non, la JVM n'en est pas la cause principale : le coupable premier est le compilateur et le système de types de Java (`javac`)**, même si deux choix d'architecture bas niveau de la JVM compliquent la donne à l'exécution.
 
