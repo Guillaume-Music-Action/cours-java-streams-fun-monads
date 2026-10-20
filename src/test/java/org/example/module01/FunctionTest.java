@@ -35,7 +35,36 @@ class FunctionTest {
             Function<String, String> identity = Function.identity();
 
             assertThat(identity.apply("streams")).isEqualTo("streams");
+
+            Function<String, String> identity2 = (s) -> s;
+            assertThat(identity2.apply("streams")).isEqualTo("streams");
+
+            Function<Integer, Integer> identity3 = (s) -> s;
+            assertThat(identity3.apply(99)).isEqualTo(99);
+
+            // en C# et en Kotlin on l'écrit comme ceci
+            var identity4 =   (Function<Integer, Integer>) (s) -> s;
+            assertThat(identity4.apply(42)).isEqualTo(42);
+
+            var indentity5 = identity4;
+
+            assertThat( identity3.getClass()  ).isNotEqualTo( identity4.getClass());
+
+            assertThat(identity4).isInstanceOf(Function.class);
+
+            //aller plus loin pour la vérification des types ne sert à rien (over engineering avec la Reflexion)
+
         }
+
+        @Test
+        @DisplayName("identity returns its input unchanged")
+        void identityReturnsIntInput() {
+            var  identity = Function.identity(); // Object to Object
+
+            assertThat(identity.apply(true)).isEqualTo(18);
+        }
+
+
 
         @Test
         @DisplayName("a lambda and a method reference behave the same")
@@ -44,6 +73,9 @@ class FunctionTest {
             Function<String, String> byReference = String::toUpperCase;
 
             assertThat(byLambda.apply("fp")).isEqualTo(byReference.apply("fp"));
+
+            var autreLambda = (Function<String, String>) s  -> s + s ;
+            assertThat( autreLambda.apply("z") ).isEqualTo( "zz");
         }
     }
 
@@ -59,6 +91,8 @@ class FunctionTest {
         void andThenAppliesReceiverFirst() {
             // (x * 2) + 1
             assertThat(doubleIt.andThen(plusOne).apply(5)).isEqualTo(11);
+            // f-> g -> (x)
+            // cliquer sur "andThen" pour voir la signature et l'implémentation
         }
 
         @Test
@@ -66,14 +100,10 @@ class FunctionTest {
         void composeAppliesArgumentFirst() {
             // (x + 1) * 2
             assertThat(doubleIt.compose(plusOne).apply(5)).isEqualTo(12);
+            // f o g -> (x)
         }
 
-        @Test
-        @DisplayName("composition order matters: andThen and compose differ")
-        void compositionOrderMatters() {
-            assertThat(doubleIt.andThen(plusOne).apply(5))
-                    .isNotEqualTo(doubleIt.compose(plusOne).apply(5));
-        }
+
 
         @Test
         @DisplayName("andThen(identity) and compose(identity) change nothing")
@@ -103,7 +133,7 @@ class FunctionTest {
             pipeline = pipeline.andThen(String::toLowerCase)
                                .andThen(s -> s.replace(' ', '-'));
 
-            assertThat(pipeline.apply("  Streams Java 25  ")).isEqualTo("streams-java-25");
+            assertThat(pipeline.apply("  Streams JAVA 25  ")).isEqualTo("streams-java-25");
         }
 
         @Test
@@ -118,18 +148,33 @@ class FunctionTest {
     @DisplayName("higher-order functions")
     class HigherOrder {
 
+        HigherOrder(){
+        }
+
         // Takes a function and returns a new one: a function that applies f twice.
-        static Function<Integer, Integer> twice(Function<Integer, Integer> f) {
+        // public + static : réutilisée telle quelle dans la classe de test Vavr
+        // (FunctionVavrTest), pour comparer la version "maison" à Function0..Function8.
+        public static Function<Integer, Integer> twice(Function<Integer, Integer> f) {
             return f.andThen(f);
         }
 
-        // Currying: takes one argument at a time.
-        static final Function<Integer, Function<Integer, Integer>> adder = a -> b -> a + b;
+        // Curryfication : une fonction à 2 arguments (a, b) -> a + b, réécrite comme
+        // une chaîne de fonctions à 1 argument : a -> (b -> a + b).
+        // C'est le mécanisme qui permet l'application partielle juste en-dessous
+        // (adder.apply(5) fixe le premier argument et renvoie une Function<Integer, Integer>),
+        // sans avoir besoin d'une interface BiFunction dédiée ni d'une syntaxe spéciale :
+        // seule l'interface Function (à 1 argument) est nécessaire, à chaque étage.
+        public static final Function<Integer, Function<Integer, Integer>> adder = a -> b -> a + b;
+        // public + static : réutilisée telle quelle dans la classe de test Vavr,
+        // où l'on comparera avec Function2<Integer, Integer, Integer>::curried.
 
         @Test
         @DisplayName("a function can take a function and return a function")
         void functionTakesAndReturnsFunction() {
             Function<Integer, Integer> plusTwo = twice(x -> x + 1);
+
+            Function<Integer, Integer> incrementeur = x -> x + 1;
+            plusTwo = twice(incrementeur);
 
             assertThat(twice(x -> x + 3).apply(10)).isEqualTo(16);
             assertThat(plusTwo.andThen(x -> x + 1).apply(0)).isEqualTo(3);
@@ -138,9 +183,18 @@ class FunctionTest {
         @Test
         @DisplayName("currying: partially applying a two-argument function")
         void curryingPartialApplication() {
+            // adder.apply(5) ne calcule rien : il renvoie la fonction "b -> 5 + b",
+            // en gardant 5 "en mémoire" (fermeture/closure). Rien n'est additionné
+            // tant que le second argument n'est pas fourni par un second apply().
             Function<Integer, Integer> addFive = adder.apply(5);
 
             assertThat(addFive.apply(10)).isEqualTo(15);
+
+            // Les deux apply() s'enchaînent comme un appel à 2 arguments classique :
+            // adder.apply(1).apply(2) joue le rôle de adder(1, 2) dans un langage
+            // qui aurait directement une BiFunction, mais ici tout reste composable
+            // avec le même vocabulaire (andThen, compose, identity) que les Function
+            // à 1 argument testées plus haut dans cette classe.
             assertThat(adder.apply(1).apply(2)).isEqualTo(3);
         }
 
@@ -153,6 +207,91 @@ class FunctionTest {
                     .reduce(Function.identity(), (f, g) -> f.andThen(g));
 
             assertThat(all.apply(1)).isEqualTo(17);
+        }
+    }
+
+    @Nested
+    @DisplayName("closures")
+    class Closures {
+
+        // adder.apply(5), vu plus haut dans HigherOrder, crée en réalité une closure :
+        // la lambda "b -> a + b" capture la variable locale "a" (ici 5) de son environnement
+        // au moment de sa création, et la garde disponible pour un appel ultérieur.
+
+        @Test
+        @DisplayName("a lambda captures an effectively-final local variable from its scope")
+        void lambdaCapturesEffectivelyFinalLocal() {
+            int captured = 10; // jamais réassignée après son initialisation : "effectively final"
+            Function<Integer, Integer> addCaptured = x -> x + captured;
+
+            assertThat(addCaptured.apply(5)).isEqualTo(15);
+
+            assertThat(addCaptured.apply(5)).isEqualTo(15);
+        }
+
+        @Test
+        @DisplayName("each call creates an independent closure, with its own captured value")
+        void eachInvocationCapturesItsOwnValue() {
+            Function<Integer, Integer> addFive = HigherOrder.adder.apply(5);
+            Function<Integer, Integer> addHundred = HigherOrder.adder.apply(100);
+
+            // Les deux closures ont chacune capturé un "a" différent (5 et 100) :
+            // appeler l'une ne modifie pas l'autre, il n'y a pas d'état partagé entre elles.
+            assertThat(addFive.apply(1)).isEqualTo(6);
+            assertThat(addHundred.apply(1)).isEqualTo(101);
+            assertThat(addFive.apply(1)).isEqualTo(6); // toujours le même résultat : pas de fuite
+        }
+
+        @Test
+        @DisplayName("a local variable captured by a lambda must be effectively final")
+        void capturingLocalVariableMustBeEffectivelyFinal() {
+            // Ne compilerait pas : "local variables referenced from a lambda expression
+            // must be final or effectively final" si on réassignait `total` après coup :
+
+            /*
+               int tota = 0;
+               Function<Integer, Integer> addToTotal = x -> x + tota;
+               tota = 5; // <-- rendrait la capture ci-dessus invalide
+            //*/
+            // Pour accumuler un état malgré tout, il faut capturer un objet MUTABLE
+            // (sa référence, elle, reste effectively final) plutôt que réassigner une primitive.
+            int[] total = {0};
+            Function<Integer, Integer> accumulate = x -> total[0] += x;
+
+            assertThat(accumulate.apply(3)).isEqualTo(3);
+            assertThat(accumulate.apply(4)).isEqualTo(7);
+            assertThat(total[0]).isEqualTo(7);
+
+            // En JavaScript, ce contournement n'est pas nécessaire : une closure JS capture
+            // le binding (la variable elle-même), pas une copie de sa valeur. On peut donc
+            // réassigner directement une variable locale capturée :
+            //
+            //   let total = 0;
+            //   const accumulate = x => total += x;
+            //   accumulate(3); // total == 3, pas besoin de tableau
+            //
+            // Java copie la VALEUR dans la lambda au moment de sa création (d'où la règle
+            // "effectively final" : le compilateur doit être certain que cette valeur ne
+            // changera plus). C'est lié à la pile d'appels : une variable locale vit sur la
+            // pile de la méthode qui l'a déclarée, laquelle peut disparaître avant l'appel de
+            // la lambda si celle-ci est renvoyée ou stockée (la lambda, elle, vit sur le tas).
+            // JS n'a pas cette contrainte : dès qu'une fonction interne peut capturer une
+            // variable, le moteur alloue son binding dans un environnement de closure sur le
+            // tas, donc la réassigner après coup reste cohérent.
+        }
+
+        private int instanceField = 1;
+
+        @Test
+        @DisplayName("a lambda inside an instance method can freely read and write an instance field")
+        void lambdaCapturesInstanceFieldFreely() {
+            // Un champ d'instance n'est pas soumis à la règle "effectively final" :
+            // la lambda capture en réalité la référence "this", pas le champ directement,
+            // donc elle peut le réassigner librement, contrairement à une variable locale.
+            Function<Integer, Integer> incrementField = x -> instanceField += x;
+
+            assertThat(incrementField.apply(10)).isEqualTo(11);
+            assertThat(instanceField).isEqualTo(11);
         }
     }
 
