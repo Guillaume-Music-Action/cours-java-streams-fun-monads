@@ -39,8 +39,8 @@ class FunctionTest {
             Function<String, String> identity2 = (s) -> s;
             assertThat(identity2.apply("streams")).isEqualTo("streams");
 
-            Function<Integer, Integer> identity3 = (s) -> s;
-            assertThat(identity3.apply(99)).isEqualTo(99);
+            Function<Double, Integer> identity3 =  (d) -> d.intValue();  //Double::intValue;
+            assertThat(identity3.apply(99.0)).isEqualTo(99);
 
             // en C# et en Kotlin on l'écrit comme ceci
             var identity4 =   (Function<Integer, Integer>) (s) -> s;
@@ -207,6 +207,7 @@ class FunctionTest {
                     .reduce(Function.identity(), (f, g) -> f.andThen(g));
 
             assertThat(all.apply(1)).isEqualTo(17);
+            assertThat(all.apply(0)).isEqualTo(7);
         }
     }
 
@@ -221,10 +222,13 @@ class FunctionTest {
         @Test
         @DisplayName("a lambda captures an effectively-final local variable from its scope")
         void lambdaCapturesEffectivelyFinalLocal() {
-            int captured = 10; // jamais réassignée après son initialisation : "effectively final"
+            final int captured = 10; // jamais réassignée après son initialisation : "effectively final"
+
             Function<Integer, Integer> addCaptured = x -> x + captured;
 
             assertThat(addCaptured.apply(5)).isEqualTo(15);
+            // essayer de modifier captured ici
+            //captured = 0;
 
             assertThat(addCaptured.apply(5)).isEqualTo(15);
         }
@@ -239,7 +243,7 @@ class FunctionTest {
             // appeler l'une ne modifie pas l'autre, il n'y a pas d'état partagé entre elles.
             assertThat(addFive.apply(1)).isEqualTo(6);
             assertThat(addHundred.apply(1)).isEqualTo(101);
-            assertThat(addFive.apply(1)).isEqualTo(6); // toujours le même résultat : pas de fuite
+            assertThat(addFive.apply(2)).isEqualTo(7); // toujours le même résultat : pas de fuite
         }
 
         @Test
@@ -253,14 +257,21 @@ class FunctionTest {
                Function<Integer, Integer> addToTotal = x -> x + tota;
                tota = 5; // <-- rendrait la capture ci-dessus invalide
             //*/
+
+            // CONTOURNEMENT :
             // Pour accumuler un état malgré tout, il faut capturer un objet MUTABLE
             // (sa référence, elle, reste effectively final) plutôt que réassigner une primitive.
-            int[] total = {0};
+            int[] total = {1};
             Function<Integer, Integer> accumulate = x -> total[0] += x;
 
-            assertThat(accumulate.apply(3)).isEqualTo(3);
-            assertThat(accumulate.apply(4)).isEqualTo(7);
-            assertThat(total[0]).isEqualTo(7);
+            assertThat(accumulate.apply(3)).isEqualTo(4);  // 1 plus 3
+            assertThat(total[0]).isEqualTo(4);
+            assertThat(accumulate.apply(3)).isEqualTo(7);  // 4 plus 3
+            assertThat(total[0]).isEqualTo(7);  // et pas 4 !!!!
+
+            Function<Integer, Integer> noAccumulate = x -> x += x;
+            assertThat(noAccumulate.apply(3)).isEqualTo(6);
+            assertThat(noAccumulate.apply(3)).isEqualTo(6); //idempotente, pas d'effet de bord
 
             // En JavaScript, ce contournement n'est pas nécessaire : une closure JS capture
             // le binding (la variable elle-même), pas une copie de sa valeur. On peut donc
@@ -280,6 +291,88 @@ class FunctionTest {
             // tas, donc la réassigner après coup reste cohérent.
         }
 
+        // Un value object immuable : une "opération" ne modifie rien, elle renvoie une
+        // COPIE portant le nouvel état. L'état est une valeur, jamais un champ mutable.
+        record BankAccount(String owner, int balance, List<String> operations) {
+
+            void append2(String label) {
+                operations.add(label);
+               // balance = 0;
+            }
+
+            BankAccount deposit(int amount) {
+                return new BankAccount(owner, balance + amount, append("deposit " + amount));
+            }
+
+            BankAccount withdraw(int amount) {
+                return new BankAccount(owner, balance - amount, append("withdraw " + amount));
+            }
+
+            // Java n'a AUCUN opérateur de "spread" pour insérer une liste dans une autre :
+            //   List.of(*operations, label)   // Kotlin : listOf(*operations.toTypedArray(), label)
+            //   [..operations, label]         // C# 12 : collection expressions
+            // La seule façon d'ajouter un élément est de recopier explicitement l'ancienne
+            // liste, ici via Stream.concat (l'ancienne liste, elle, n'est jamais modifiée).
+            private List<String> append(String label) {
+                return Stream.concat(operations.stream(), Stream.of(label)).toList();
+            }
+        }
+
+        @Test
+        @DisplayName("an operation on a record returns a new copy instead of mutating it")
+        void recordOperationReturnsACopy() {
+            var account = new BankAccount("Ada", 100, List.of());
+
+            var afterDeposit = account.deposit(50);
+
+            assertThat(account.balance()).isEqualTo(100);      // l'original n'a pas bougé
+            assertThat(afterDeposit.balance()).isEqualTo(150); // seule la copie porte le nouvel état
+            assertThat(afterDeposit.owner()).isEqualTo("Ada");
+            assertThat(account.operations()).isEmpty();        // l'historique de l'original est intact
+            assertThat(afterDeposit.operations()).containsExactly("deposit 50");
+        }
+
+        @Test
+        @DisplayName("Java has no spread operator: appending to a list means copying it")
+        void noSpreadOperator() {
+            var account = new BankAccount("Ada", 100, List.of("open"));
+
+            var afterDeposit = account.deposit(50);
+
+            // Ce qu'on écrirait en Kotlin (listOf(*operations.toTypedArray(), label)) ou en
+            // C# 12 ([..operations, label]) n'a pas d'équivalent Java : il faut recopier
+            // l'ancienne liste élément par élément, puis ajouter le nouveau.
+            assertThat(afterDeposit.operations()).containsExactly("open", "deposit 50");
+            assertThat(account.operations()).containsExactly("open"); // l'ancienne liste reste intacte
+        }
+
+        @Test
+        @DisplayName("a partially applied operation is a closure over the account state")
+        void operationAsClosure() {
+            // deposit(50) "à moitié appliqué" : la lambda capture le montant 50 et devient
+            // une Function<BankAccount, BankAccount> réutilisable, exactement comme
+            // HigherOrder.adder.apply(5) capturait le 5. L'état de compte, lui, n'est
+            // jamais capturé : il est passé en argument à chaque appel.
+            Function<BankAccount, BankAccount> depositFifty = account -> account.deposit(50);
+
+            var account = new BankAccount("Ada", 100, List.of());
+
+            assertThat(depositFifty.apply(account).balance()).isEqualTo(150);
+            assertThat(depositFifty.apply(account).balance()).isEqualTo(150); // pas d'état partagé, idempotence
+            assertThat(depositFifty.apply(account).balance()).isEqualTo(150);
+
+            var newState = depositFifty.apply(account);
+            assertThat(depositFifty.apply(newState).balance()).isEqualTo(200);
+
+            // Comme toute Function, ces opérations se composent : dépôt puis retrait.
+            Function<BankAccount, BankAccount> withdrawTwenty = account2 -> account2.withdraw(20);
+            var finalAccount = depositFifty.andThen(withdrawTwenty).apply(account);
+
+            assertThat(finalAccount.balance()).isEqualTo(130);
+            assertThat(finalAccount.operations()).containsExactly("deposit 50", "withdraw 20");
+        }
+
+        ///////////////     continuoons sur les closures de fonctions
         private int instanceField = 1;
 
         @Test
@@ -292,6 +385,8 @@ class FunctionTest {
 
             assertThat(incrementField.apply(10)).isEqualTo(11);
             assertThat(instanceField).isEqualTo(11);
+            incrementField.apply(1);
+            assertThat(instanceField).isEqualTo(12);
         }
     }
 
